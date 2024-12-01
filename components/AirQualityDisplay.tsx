@@ -1,3 +1,5 @@
+"use client";
+
 import { getAQIColor, getAQILevel } from "@/lib/aqi";
 import { Language, translations } from "@/lib/translations";
 import { format, parseISO } from "date-fns";
