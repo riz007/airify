@@ -22,11 +22,11 @@ export function ApiCredits() {
         </Link>
         .
       </p>
-      <a
+      <Link
         href="https://www.flaticon.com/free-icons/air-pollution"
         title="air pollution icons">
         Air pollution icons created by Freepik - Flaticon
-      </a>
+      </Link>
     </footer>
   );
 }
