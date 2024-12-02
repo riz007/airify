@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export function ApiCredits() {
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-background p-4 text-center border-t">
+    <footer className="bottom-0 left-0 right-0 bg-background p-4 text-center border-t">
       <p className="text-sm text-muted-foreground">
         Data provided by the{" "}
         <Link
