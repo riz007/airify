@@ -12,10 +12,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto font-[family-name:var(--font-geist-sans)]">
-        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-center text-foreground">
-          {translation.title}
+        <h1 className="text-4xl md:text-5xl font-bold mb-2 text-center text-foreground">
+          Airify
         </h1>
-        <AirQualityChecker />
+        <p className="text-xl md:text-2xl mb-8 text-center text-muted-foreground">
+          {translation.title}
+        </p>
+        <AirQualityChecker language={language} setLanguage={setLanguage} />
         <ApiCredits />
       </div>
     </main>

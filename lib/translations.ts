@@ -28,6 +28,10 @@ export const translations = {
     moreInfo: "For more information, visit",
     none: "None",
     searchResults: "Search results",
+    searchPlaceholder: "Search for a city...",
+    noResults: "No results found",
+    searchError: "Error occurred while searching",
+    dataFetchError: "Error occurred while fetching data",
   },
   th: {
     title: "เครื่องตรวจสอบคุณภาพอากาศ PM 2.5",
@@ -57,6 +61,10 @@ export const translations = {
     moreInfo: "สำหรับข้อมูลเพิ่มเติม เยี่ยมชม",
     none: "ไม่มี",
     searchResults: "ผลการค้นหา",
+    searchPlaceholder: "ค้นหาเมือง...",
+    noResults: "ไม่พบผลลัพธ์",
+    searchError: "เกิดข้อผิดพลาดขณะค้นหา",
+    dataFetchError: "เกิดข้อผิดพลาดขณะดึงข้อมูล",
   },
 };
 

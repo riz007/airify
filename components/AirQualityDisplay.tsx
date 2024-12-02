@@ -14,6 +14,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 interface AirQualityDisplayProps {
   data: {
@@ -38,6 +44,22 @@ interface AirQualityDisplayProps {
   };
   language: Language;
 }
+
+const pollutantInfo = {
+  pm25: { name: "PM2.5", description: "Fine particulate matter" },
+  pm10: { name: "PM10", description: "Respirable particulate matter" },
+  o3: { name: "Ozone", description: "Ground-level ozone" },
+  no2: { name: "Nitrogen Dioxide", description: "Toxic gas from combustion" },
+  so2: {
+    name: "Sulfur Dioxide",
+    description: "Toxic gas from fossil fuel combustion",
+  },
+  co: {
+    name: "Carbon Monoxide",
+    description: "Toxic gas from incomplete combustion",
+  },
+};
+
 export default function AirQualityDisplay({
   data,
   language,
@@ -113,12 +135,32 @@ export default function AirQualityDisplay({
               {Object.entries(iaqi).map(
                 ([key, value]) =>
                   key !== "pm25" && (
-                    <div key={key} className="bg-muted p-3 rounded-lg">
-                      <p className="font-medium text-muted-foreground">
-                        {key.toUpperCase()}
-                      </p>
-                      <p className="text-2xl font-semibold">{value.v}</p>
-                    </div>
+                    <TooltipProvider key={key}>
+                      <UITooltip>
+                        <TooltipTrigger asChild>
+                          <div className="bg-muted p-3 rounded-lg cursor-help">
+                            <p className="font-medium text-muted-foreground">
+                              {key.toUpperCase()}
+                            </p>
+                            <p className="text-2xl font-semibold">{value.v}</p>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {
+                              pollutantInfo[key as keyof typeof pollutantInfo]
+                                ?.name
+                            }
+                          </p>
+                          <p>
+                            {
+                              pollutantInfo[key as keyof typeof pollutantInfo]
+                                ?.description
+                            }
+                          </p>
+                        </TooltipContent>
+                      </UITooltip>
+                    </TooltipProvider>
                   )
               )}
             </div>

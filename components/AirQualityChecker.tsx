@@ -1,7 +1,6 @@
 "use client";
 
-import { Language, translations } from "@/lib/translations";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import {
   Select,
@@ -10,10 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { ReloadIcon } from "@radix-ui/react-icons";
-import { Search } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 import AirQualityDisplay from "./AirQualityDisplay";
 import {
@@ -21,33 +18,40 @@ import {
   getGeoLocalizedData,
   searchStations,
 } from "@/lib/api";
-
-const cities = [
-  "Bangkok",
-  "Chiang Mai",
-  "Pattaya",
-  "Phuket",
-  "Hat Yai",
-  "London",
-  "New York",
-  "Tokyo",
-  "Sydney",
-  "Beijing",
-];
+import { Language, translations } from "@/lib/translations";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "./ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
+import debounce from "lodash/debounce";
 
 interface Station {
   uid: number;
   station: {
     name: string;
   };
-  aqi: number;
+  aqi: string;
 }
 
-export default function AirQualityChecker() {
-  const [selectedCity, setSelectedCity] = useState("");
-  const [customCity, setCustomCity] = useState("");
-  const [searchResults, setSearchResults] = useState<Station[]>([]);
-  const [language, setLanguage] = useState<Language>("en");
+interface AirQualityCheckerProps {
+  language: Language;
+  setLanguage: (lang: Language) => void;
+}
+
+export default function AirQualityChecker({
+  language,
+  setLanguage,
+}: AirQualityCheckerProps) {
+  const [open, setOpen] = useState(false);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,54 +65,71 @@ export default function AirQualityChecker() {
       setError(null);
       try {
         const result = await getGeoLocalizedData();
-        setData(result);
+        if (result.status === "ok") {
+          setData(result);
+          setStations([
+            {
+              uid: result.data.idx,
+              station: { name: result.data.city.name },
+              aqi: result.data.aqi,
+            },
+          ]);
+        } else {
+          setError(result.data);
+        }
       } catch (error) {
-        setError(
-          (error as Error).message || "Failed to fetch default location data."
-        );
+        setError((error as Error).message || translation.dataFetchError);
       } finally {
         setIsLoading(false);
       }
     };
     fetchGeoLocalizedData();
-  }, []);
+  }, [translation.dataFetchError]);
 
-  const handleSearch = async () => {
-    if (!customCity && !selectedCity) {
-      setError("Please select a city or enter a custom search.");
-      return;
-    }
-
-    const cityToSearch = customCity || selectedCity;
-    setIsLoading(true);
-    setError(null);
-    setSearchResults([]);
-    try {
-      const result = await searchStations(cityToSearch);
-      if (result?.status === "ok") {
-        setSearchResults(result.data);
-      } else {
-        setError("No stations found for the search query.");
+  const debouncedSearch = useCallback(
+    debounce(async (value: string) => {
+      if (value.length > 2) {
+        setIsLoading(true);
+        setError(null);
+        try {
+          const result = await searchStations(value);
+          if (result.status === "ok") {
+            setStations(result.data);
+          } else {
+            setStations([]);
+            setError(translation.noResults);
+          }
+        } catch (error) {
+          setError((error as Error).message || translation.searchError);
+        } finally {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      setError((error as Error).message || "Error fetching search results.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    }, 300),
+    [translation.noResults, translation.searchError]
+  );
 
-  const handleSelectStation = async (stationId: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await getAirQualityData(stationId);
-      setData(result);
-    } catch (error) {
-      setError((error as Error).message || "Error fetching station data.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleStationSelect = useCallback(
+    async (station: Station) => {
+      setSelectedStation(station);
+      setOpen(false);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const result = await getAirQualityData(station.uid);
+        if (result.status === "ok") {
+          setData(result);
+        } else {
+          setError(result.data);
+        }
+      } catch (error) {
+        setError((error as Error).message || translation.dataFetchError);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [translation.dataFetchError]
+  );
 
   return (
     <div className="space-y-6">
@@ -130,50 +151,62 @@ export default function AirQualityChecker() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select
-            value={selectedCity || "none"}
-            onValueChange={(value) => {
-              if (value === "none") {
-                setSelectedCity("");
-              } else {
-                setSelectedCity(value);
-              }
-              setCustomCity("");
-            }}>
-            <SelectTrigger>
-              <SelectValue placeholder={translation.selectCity} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{translation.none}</SelectItem>
-              {cities.map((city) => (
-                <SelectItem key={city} value={city}>
-                  {city}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex space-x-2">
-            <Input
-              placeholder={translation.enterCustomCity}
-              value={customCity}
-              onChange={(e) => {
-                setCustomCity(e.target.value);
-                setSelectedCity("");
-              }}
-            />
-            <Button onClick={handleSearch} disabled={isLoading}>
-              {isLoading ? (
-                <ReloadIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
-              <span className="ml-2">
-                {isLoading ? translation.loading : translation.search}
-              </span>
-            </Button>
-          </div>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between">
+                {selectedStation
+                  ? `${selectedStation.station.name} - AQI: ${selectedStation.aqi}`
+                  : translation.selectCity}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput
+                  placeholder={translation.searchPlaceholder}
+                  onValueChange={(value) => {
+                    if (value.length > 2) {
+                      debouncedSearch(value);
+                    }
+                  }}
+                />
+                <CommandList>
+                  <CommandEmpty>{translation.noResults}</CommandEmpty>
+                  <CommandGroup>
+                    {stations.map((station) => (
+                      <CommandItem
+                        key={station?.uid}
+                        value={station?.station?.name}
+                        onSelect={() => handleStationSelect(station)}>
+                        {station.station.name} - AQI: {station.aqi}
+                        <Check
+                          className={cn(
+                            "ml-auto h-4 w-4",
+                            selectedStation?.uid === station.uid
+                              ? "opacity-100"
+                              : "opacity-0"
+                          )}
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </CardContent>
       </Card>
+
+      {isLoading && (
+        <div className="flex justify-center">
+          <ReloadIcon className="h-8 w-8 animate-spin" />
+        </div>
+      )}
+
       {error && (
         <Alert variant="destructive">
           <AlertTitle>{translation.error}</AlertTitle>
@@ -181,24 +214,9 @@ export default function AirQualityChecker() {
         </Alert>
       )}
 
-      {searchResults.length > 0 && (
-        <div>
-          <h3>{translation.searchResults}</h3>
-          <ul>
-            {searchResults.map((station) => (
-              <li key={station.uid}>
-                <button
-                  onClick={() => handleSelectStation(station.uid)}
-                  className="text-blue-500">
-                  {station.station.name} - AQI: {station.aqi}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {data && data.status === "ok" && (
+        <AirQualityDisplay data={data.data} language={language} />
       )}
-
-      {data && <AirQualityDisplay data={data.data} language={language} />}
     </div>
   );
 }
