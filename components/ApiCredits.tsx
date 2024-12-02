@@ -24,7 +24,8 @@ export function ApiCredits() {
       </p>
       <Link
         href="https://www.flaticon.com/free-icons/air-pollution"
-        title="air pollution icons">
+        title="air pollution icons"
+        className="underline hover:text-primary">
         Air pollution icons created by Freepik - Flaticon
       </Link>
     </footer>
