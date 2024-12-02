@@ -32,6 +32,7 @@ export const translations = {
     noResults: "No results found",
     searchError: "Error occurred while searching",
     dataFetchError: "Error occurred while fetching data",
+    geolocationError: "Unable to get your location. Showing default data.",
   },
   th: {
     title: "เครื่องตรวจสอบคุณภาพอากาศ PM 2.5",
@@ -65,6 +66,7 @@ export const translations = {
     noResults: "ไม่พบผลลัพธ์",
     searchError: "เกิดข้อผิดพลาดขณะค้นหา",
     dataFetchError: "เกิดข้อผิดพลาดขณะดึงข้อมูล",
+    geolocationError: "ไม่สามารถระบุตำแหน่งของคุณได้ แสดงข้อมูลเริ่มต้น",
   },
 };
 

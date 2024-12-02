@@ -60,11 +60,11 @@ export default function AirQualityChecker({
   const translation = translations[language];
 
   useEffect(() => {
-    const fetchGeoLocalizedData = async () => {
+    const fetchGeoLocalizedData = async (lat?: number, lon?: number) => {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await getGeoLocalizedData();
+        const result = await getGeoLocalizedData(lat, lon);
         if (result.status === "ok") {
           setData(result);
           setStations([
@@ -74,8 +74,13 @@ export default function AirQualityChecker({
               aqi: result.data.aqi,
             },
           ]);
+          setSelectedStation({
+            uid: result.data.idx,
+            station: { name: result.data.city.name },
+            aqi: result.data.aqi,
+          });
         } else {
-          setError(result.data);
+          throw new Error(result.data);
         }
       } catch (error) {
         setError((error as Error).message || translation.dataFetchError);
@@ -83,12 +88,27 @@ export default function AirQualityChecker({
         setIsLoading(false);
       }
     };
-    fetchGeoLocalizedData();
+
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          fetchGeoLocalizedData(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+        },
+        () => {
+          fetchGeoLocalizedData();
+        }
+      );
+    } else {
+      fetchGeoLocalizedData();
+    }
   }, [translation.dataFetchError]);
 
   const debouncedSearch = useCallback(
     debounce(async (value: string) => {
-      if (value.length > 2) {
+      if (value?.length > 2) {
         setIsLoading(true);
         setError(null);
         try {
@@ -116,7 +136,7 @@ export default function AirQualityChecker({
       setIsLoading(true);
       setError(null);
       try {
-        const result = await getAirQualityData(station.uid);
+        const result = await getAirQualityData(station?.uid);
         if (result.status === "ok") {
           setData(result);
         } else {
@@ -182,11 +202,11 @@ export default function AirQualityChecker({
                         key={station?.uid}
                         value={station?.station?.name}
                         onSelect={() => handleStationSelect(station)}>
-                        {station.station.name} - AQI: {station.aqi}
+                        {station?.station?.name} - AQI: {station?.aqi}
                         <Check
                           className={cn(
                             "ml-auto h-4 w-4",
-                            selectedStation?.uid === station.uid
+                            selectedStation?.uid === station?.uid
                               ? "opacity-100"
                               : "opacity-0"
                           )}

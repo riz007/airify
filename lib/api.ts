@@ -1,8 +1,12 @@
 import { rateLimit } from "./rateLimit";
 
-export const getGeoLocalizedData = async () => {
+export const getGeoLocalizedData = async (lat?: number, lon?: number) => {
   await rateLimit();
-  const response = await fetch("/api/geo-localized");
+  let url = "/api/geo-localized";
+  if (lat && lon) {
+    url += `?lat=${lat}&lon=${lon}`;
+  }
+  const response = await fetch(url);
   return response.json();
 };
 
