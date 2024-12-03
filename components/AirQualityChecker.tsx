@@ -56,11 +56,16 @@ export default function AirQualityChecker({
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGeolocationSupported, setIsGeolocationSupported] = useState(false);
 
   const translation = translations[language];
 
   useEffect(() => {
-    const fetchGeoLocalizedData = async (lat?: number, lon?: number) => {
+    setIsGeolocationSupported("geolocation" in navigator);
+  }, []);
+
+  const fetchGeoLocalizedData = useCallback(
+    async (lat?: number, lon?: number) => {
       setIsLoading(true);
       setError(null);
       try {
@@ -87,24 +92,34 @@ export default function AirQualityChecker({
       } finally {
         setIsLoading(false);
       }
+    },
+    [translation.dataFetchError]
+  );
+
+  useEffect(() => {
+    const getLocation = () => {
+      if (isGeolocationSupported) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            fetchGeoLocalizedData(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+          },
+          () => {
+            fetchGeoLocalizedData();
+          }
+        );
+      } else {
+        fetchGeoLocalizedData();
+      }
     };
 
-    if (typeof window !== "undefined" && "geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          fetchGeoLocalizedData(
-            position.coords.latitude,
-            position.coords.longitude
-          );
-        },
-        () => {
-          fetchGeoLocalizedData();
-        }
-      );
-    } else {
-      fetchGeoLocalizedData();
+    // Only attempt to get location after client-side mount and geolocation check
+    if (isGeolocationSupported !== false && !data) {
+      getLocation();
     }
-  }, [translation.dataFetchError]);
+  }, [isGeolocationSupported, fetchGeoLocalizedData, data]);
 
   const debouncedSearch = useCallback(
     debounce(async (value: string) => {
@@ -177,7 +192,7 @@ export default function AirQualityChecker({
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-full justify-between">
+                className="w-full justify-between whitespace-normal">
                 {selectedStation
                   ? `${selectedStation.station.name} - AQI: ${selectedStation.aqi}`
                   : translation.selectCity}

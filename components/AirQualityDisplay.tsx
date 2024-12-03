@@ -71,6 +71,10 @@ export default function AirQualityDisplay({
   const dateLocale = language === "en" ? enUS : th;
 
   const formatDate = (dateString: string) => {
+    if (!dateString) {
+      console.error("Invalid date", dateString);
+      return "Invalid Date";
+    }
     const date = parseISO(dateString);
     return format(date, "PPp", { locale: dateLocale });
   };
