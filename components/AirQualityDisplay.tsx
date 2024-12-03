@@ -146,7 +146,9 @@ export default function AirQualityDisplay({
                             <p className="font-medium text-muted-foreground">
                               {key.toUpperCase()}
                             </p>
-                            <p className="text-2xl font-semibold">{value.v}</p>
+                            <p className="text-2xl font-semibold">
+                              {value.v?.toFixed(2)}
+                            </p>
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
